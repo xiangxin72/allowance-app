@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#111827" />
+  <link rel="manifest" href="manifest.json" />
+  <title>Allowance Tracker</title>
+  <style>
+    :root { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Helvetica Neue", Arial; }
+    body { margin: 0; background:#0b1220; color:#e5e7eb; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 18px; }
+    .card { background:#111827; border:1px solid #1f2937; border-radius:14px; padding: 14px; margin: 12px 0; }
+    h1 { font-size: 20px; margin: 6px 0 10px; }
+    h2 { font-size: 16px; margin: 0 0 10px; }
+    .row { display:flex; gap:12px; flex-wrap: wrap; }
+    .col { flex: 1; min-width: 220px; }
+    input, select, button, textarea {
+      width: 100%; box-sizing: border-box;
+      padding: 10px; border-radius: 12px; border:1px solid #374151;
+      background:#0b1220; color:#e5e7eb; outline:none;
+    }
+    button { background:#2563eb; border:none; cursor:pointer; font-weight:600; }
+    button.secondary { background:#374151; }
+    button.danger { background:#dc2626; }
+    .metric { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-radius:12px; background:#0b1220; border:1px solid #1f2937; }
+    .metric b { font-size: 16px; }
+    .muted { color:#9ca3af; font-size: 12px; }
+    .warn { background:#3b2f0b; border:1px solid #a16207; }
+    .ok { background:#0b3b1a; border:1px solid #16a34a; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #1f2937; padding: 10px 6px; text-align:left; font-size: 13px; }
+    th { color:#9ca3af; font-weight:600; }
+    .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; background:#0b1220; border:1px solid #374151; color:#cbd5e1; }
+    .topbar { display:flex; gap:10px; align-items:center; flex-wrap: wrap; }
+    .grow { flex:1; min-width: 220px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="grow">
+      <h1>💰 Allowance Tracker（Saving / Spending / Investment）</h1>
+      <div class="muted">跨平台运行：iPhone/iPad/Android 都行。人类终于做对一件事：用浏览器。 </div>
+    </div>
+    <button class="secondary" id="btnExport">导出数据</button>
+    <button class="secondary" id="btnImport">导入数据</button>
+    <input type="file" id="fileImport" accept="application/json" style="display:none" />
+  </div>
+
+  <div class="card">
+    <h2>👧🧒 孩子</h2>
+    <div class="row">
+      <div class="col">
+        <label class="muted">选择孩子</label>
+        <select id="childSelect"></select>
+      </div>
+      <div class="col">
+        <label class="muted">添加孩子</label>
+        <div class="row">
+          <div class="col"><input id="childName" placeholder="例如：Luna / Stella" /></div>
+          <div class="col"><button id="btnAddChild">添加</button></div>
+        </div>
+      </div>
+      <div class="col">
+        <label class="muted">每周零花钱基准（默认 $5）</label>
+        <input id="weeklyBase" type="number" min="0" step="1" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📌 余额概览</h2>
+    <div class="row" id="metrics"></div>
+    <div class="muted" id="weekInfo" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="card" id="weeklyCard">
+    <h2>⏰ 每周分配（必须刚好等于每周基准）</h2>
+    <div id="weeklyStatus" class="card warn" style="margin: 0 0 12px;"></div>
+
+    <div class="row">
+      <div class="col">
+        <label class="muted">Saving（锁定）</label>
+        <input id="wkSaving" type="number" min="0" step="1" value="0" />
+      </div>
+      <div class="col">
+        <label class="muted">Spending（可花）</label>
+        <input id="wkSpending" type="number" min="0" step="1" value="5" />
+      </div>
+      <div class="col">
+        <label class="muted">Investment（+50% match）</label>
+        <input id="wkInvestment" type="number" min="0" step="1" value="0" />
+      </div>
+      <div class="col">
+        <label class="muted">备注（可选）</label>
+        <input id="wkNote" placeholder="比如：本周表现/奖励原因" />
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <div class="col">
+        <button id="btnSubmitWeek">✅ 提交本周分配</button>
+      </div>
+      <div class="col">
+        <button class="danger" id="btnResetWeek">（谨慎）删除本周分配</button>
+      </div>
+      <div class="col">
+        <div class="muted" id="wkSum"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>➕ 记一笔（额外存入或花费）</h2>
+    <div class="row">
+      <div class="col">
+        <label class="muted">类型</label>
+        <select id="txType">
+          <option value="deposit">Deposit（存入）</option>
+          <option value="spend">Spend（花费，仅 Spending）</option>
+        </select>
+      </div>
+      <div class="col">
+        <label class="muted">类别</label>
+        <select id="txCategory">
+          <option value="saving">Saving</option>
+          <option value="spending" selected>Spending</option>
+          <option value="investment">Investment</option>
+        </select>
+      </div>
+      <div class="col">
+        <label class="muted">金额</label>
+        <input id="txAmount" type="number" min="0" step="1" value="1" />
+      </div>
+      <div class="col">
+        <label class="muted">备注</label>
+        <input id="txNote" placeholder="买了啥/为啥存" />
+      </div>
+      <div class="col">
+        <label class="muted"> </label>
+        <button id="btnAddTx">记录</button>
+      </div>
+    </div>
+    <div class="muted" style="margin-top:8px;">
+      Saving 不允许花费。Investment 存入会自动加 50% match。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📒 账本</h2>
+    <div class="muted" style="margin-bottom:8px;">最近记录在上面。Investment 匹配会显示 meta=match。</div>
+    <div style="overflow:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>时间</th><th>类别</th><th>类型</th><th>金额</th><th>备注</th><th>meta</th>
+          </tr>
+        </thead>
+        <tbody id="ledger"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+/** ---------- Storage Model ----------
+ * data = {
+ *  version: 1,
+ *  settings: { weeklyBaseDefault: 5 },
+ *  children: [{ id, name, createdAt, weeklyBase? }],
+ *  weekly: [{ childId, weekKey, base, saving, spending, investment, ts, note }],
+ *  txs: [{ childId, ts, category, type, amount, note, meta }]
+ * }
+ */
+const KEY = "allowance_pwa_v1";
+
+function loadData() {
+  const raw = localStorage.getItem(KEY);
+  if (!raw) {
+    const init = {
+      version: 1,
+      settings: { weeklyBaseDefault: 5 },
+      children: [],
+      weekly: [],
+      txs: []
+    };
+    localStorage.setItem(KEY, JSON.stringify(init));
+    return init;
+  }
+  try { return JSON.parse(raw); } catch {
+    localStorage.removeItem(KEY);
+    return loadData();
+  }
+}
+function saveData(data) {
+  localStorage.setItem(KEY, JSON.stringify(data));
+}
+
+function money(x) {
+  const n = Number(x || 0);
+  return n.toLocaleString(undefined, { style: "currency", currency: "USD" });
+}
+function nowISO() {
+  const d = new Date();
+  return d.toISOString().slice(0,19);
+}
+function isoWeekKey(d = new Date()) {
+  // ISO week calculation
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+  const weekNo = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+  const year = date.getUTCFullYear();
+  return `${year}-W${String(weekNo).padStart(2,"0")}`;
+}
+function clampZero(n) { return Math.abs(n) < 1e-9 ? 0 : n; }
+
+function getSelectedChildId() {
+  return Number(document.getElementById("childSelect").value || 0);
+}
+function getChildById(data, id) {
+  return data.children.find(c => c.id === id);
+}
+function hasWeekly(data, childId, weekKey) {
+  return data.weekly.some(w => w.childId === childId && w.weekKey === weekKey);
+}
+function getWeekly(data, childId, weekKey) {
+  return data.weekly.find(w => w.childId === childId && w.weekKey === weekKey);
+}
+function removeWeekly(data, childId, weekKey) {
+  data.weekly = data.weekly.filter(w => !(w.childId === childId && w.weekKey === weekKey));
+  // also remove txs tagged with meta=weekKey for that child (weekly deposits only)
+  data.txs = data.txs.filter(t => !(t.childId === childId && t.meta === weekKey));
+  saveData(data);
+}
+
+function computeBalances(data, childId) {
+  const bal = { saving: 0, spending: 0, investment: 0 };
+  for (const t of data.txs.filter(t => t.childId === childId)) {
+    if (bal[t.category] === undefined) continue;
+    bal[t.category] += Number(t.amount);
+  }
+  for (const k of Object.keys(bal)) bal[k] = clampZero(bal[k]);
+  return bal;
+}
+
+function render() {
+  const data = loadData();
+  const childSelect = document.getElementById("childSelect");
+  childSelect.innerHTML = "";
+  for (const c of data.children) {
+    const opt = document.createElement("option");
+    opt.value = c.id;
+    opt.textContent = c.name;
+    childSelect.appendChild(opt);
+  }
+
+  // Auto-select first child
+  if (data.children.length && !childSelect.value) childSelect.value = data.children[0].id;
+
+  const childId = getSelectedChildId();
+  const child = getChildById(data, childId);
+
+  // weekly base
+  const weeklyBaseInput = document.getElementById("weeklyBase");
+  const base = child?.weeklyBase ?? data.settings.weeklyBaseDefault ?? 5;
+  weeklyBaseInput.value = base;
+
+  // metrics
+  const balances = child ? computeBalances(data, childId) : { saving:0, spending:0, investment:0 };
+  const total = balances.saving + balances.spending + balances.investment;
+  const metrics = document.getElementById("metrics");
+  metrics.innerHTML = "";
+  const items = [
+    ["Saving（锁定）", balances.saving],
+    ["Spending（可花）", balances.spending],
+    ["Investment（含匹配）", balances.investment],
+    ["Total（总资产）", total]
+  ];
+  for (const [label, val] of items) {
+    const div = document.createElement("div");
+    div.className = "col metric";
+    div.innerHTML = `<span>${label}</span><b>${money(val)}</b>`;
+    metrics.appendChild(div);
+  }
+
+  // week reminder + allocator
+  const weekKey = isoWeekKey(new Date());
+  document.getElementById("weekInfo").textContent = `当前周：${weekKey}（按 ISO 周计算）`;
+
+  const weeklyCard = document.getElementById("weeklyCard");
+  if (!child) {
+    weeklyCard.style.display = "none";
+  } else {
+    weeklyCard.style.display = "block";
+    const status = document.getElementById("weeklyStatus");
+    const exists = hasWeekly(data, childId, weekKey);
+
+    const wkSaving = document.getElementById("wkSaving");
+    const wkSpending = document.getElementById("wkSpending");
+    const wkInvestment = document.getElementById("wkInvestment");
+    const wkNote = document.getElementById("wkNote");
+    const wkSum = document.getElementById("wkSum");
+
+    if (exists) {
+      const w = getWeekly(data, childId, weekKey);
+      status.className = "card ok";
+      status.textContent = `✅ 本周已完成分配：Saving ${money(w.saving)} / Spending ${money(w.spending)} / Investment ${money(w.investment)}（基准 ${money(w.base)}）`;
+      // load existing allocation into inputs (readonly-ish behavior)
+      wkSaving.value = w.saving;
+      wkSpending.value = w.spending;
+      wkInvestment.value = w.investment;
+      wkNote.value = w.note || "";
+    } else {
+      status.className = "card warn";
+      status.textContent = `⏰ 本周还没分配零花钱。请把 ${money(base)} 分配到三类里（合计必须刚好等于基准）。`;
+    }
+
+    const sumNow = Number(wkSaving.value||0) + Number(wkSpending.value||0) + Number(wkInvestment.value||0);
+    wkSum.textContent = `当前合计：${money(sumNow)}（需要等于 ${money(base)}）`;
+  }
+
+  // ledger
+  const ledger = document.getElementById("ledger");
+  ledger.innerHTML = "";
+  if (child) {
+    const txs = data.txs
+      .filter(t => t.childId === childId)
+      .slice()
+      .sort((a,b) => (b.ts.localeCompare(a.ts)));
+    for (const t of txs) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${t.ts.replace("T"," ")}</td>
+        <td><span class="pill">${t.category}</span></td>
+        <td>${t.type}</td>
+        <td>${money(t.amount)}</td>
+        <td>${(t.note || "")}</td>
+        <td>${(t.meta || "")}</td>
+      `;
+      ledger.appendChild(tr);
+    }
+  }
+}
+
+function addChild() {
+  const data = loadData();
+  const name = document.getElementById("childName").value.trim();
+  if (!name) return alert("孩子名字不能为空。人类起名还是很重要的。");
+  const id = Date.now();
+  data.children.push({ id, name, createdAt: nowISO() });
+  saveData(data);
+  document.getElementById("childName").value = "";
+  render();
+}
+
+function updateWeeklyBase() {
+  const data = loadData();
+  const childId = getSelectedChildId();
+  const child = getChildById(data, childId);
+  const val = Number(document.getElementById("weeklyBase").value || 5);
+  if (!child) return;
+  child.weeklyBase = val;
+  saveData(data);
+  render();
+}
+
+function submitWeek() {
+  const data = loadData();
+  const childId = getSelectedChildId();
+  const child = getChildById(data, childId);
+  if (!child) return;
+
+  const weekKey = isoWeekKey(new Date());
+  if (hasWeekly(data, childId, weekKey)) {
+    return alert("本周已经提交过了。要改请先删除本周分配（谨慎按钮）。");
+  }
+  const base = Number(document.getElementById("weeklyBase").value || 5);
+  const s = Number(document.getElementById("wkSaving").value || 0);
+  const p = Number(document.getElementById("wkSpending").value || 0);
+  const i = Number(document.getElementById("wkInvestment").value || 0);
+  const note = document.getElementById("wkNote").value || "";
+  const sum = s + p + i;
+
+  if (Math.abs(sum - base) > 1e-6) {
+    return alert(`合计必须刚好等于 ${money(base)}。你现在是 ${money(sum)}。`);
+  }
+
+  // weekly record
+  data.weekly.push({ childId, weekKey, base, saving:s, spending:p, investment:i, ts: nowISO(), note });
+
+  // deposits for each category, meta=weekKey for traceability
+  if (s > 0) data.txs.push({ childId, ts: nowISO(), category:"saving", type:"deposit", amount:s, note:"Weekly allowance allocation", meta: weekKey });
+  if (p > 0) data.txs.push({ childId, ts: nowISO(), category:"spending", type:"deposit", amount:p, note:"Weekly allowance allocation", meta: weekKey });
+  if (i > 0) {
+    data.txs.push({ childId, ts: nowISO(), category:"investment", type:"deposit", amount:i, note:"Weekly allowance allocation", meta: weekKey });
+    // auto match +50%
+    const match = Math.round(i * 0.5 * 100) / 100;
+    if (match > 0) data.txs.push({ childId, ts: nowISO(), category:"investment", type:"deposit", amount:match, note:"Auto match +50% (weekly)", meta:"match" });
+  }
+
+  saveData(data);
+  render();
+}
+
+function resetWeek() {
+  const data = loadData();
+  const childId = getSelectedChildId();
+  const child = getChildById(data, childId);
+  if (!child) return;
+  const weekKey = isoWeekKey(new Date());
+  if (!hasWeekly(data, childId, weekKey)) return alert("本周还没提交过，不用删。");
+  if (!confirm("确定删除本周分配？会同时删除本周的三类入账交易（不会删除其他交易）。")) return;
+  removeWeekly(data, childId, weekKey);
+  render();
+}
+
+function addTx() {
+  const data = loadData();
+  const childId = getSelectedChildId();
+  const child = getChildById(data, childId);
+  if (!child) return;
+
+  const type = document.getElementById("txType").value;
+  const cat = document.getElementById("txCategory").value;
+  const amt = Number(document.getElementById("txAmount").value || 0);
+  const note = document.getElementById("txNote").value || "";
+
+  if (amt <= 0) return alert("金额得大于 0。");
+
+  // rules
+  if (type === "spend") {
+    if (cat !== "spending") return alert("花费只能从 Spending。Saving 锁死，Investment 这里先不做卖出。");
+    const bal = computeBalances(data, childId);
+    if (bal.spending < amt) return alert(`Spending 余额不足：当前 ${money(bal.spending)}`);
+    data.txs.push({ childId, ts: nowISO(), category:"spending", type:"spend", amount:-amt, note, meta:"" });
+  } else {
+    // deposit
+    data.txs.push({ childId, ts: nowISO(), category:cat, type:"deposit", amount:amt, note, meta:"" });
+    if (cat === "investment") {
+      const match = Math.round(amt * 0.5 * 100) / 100;
+      if (match > 0) data.txs.push({ childId, ts: nowISO(), category:"investment", type:"deposit", amount:match, note:"Auto match +50%", meta:"match" });
+    }
+  }
+
+  saveData(data);
+  document.getElementById("txNote").value = "";
+  render();
+}
+
+function exportData() {
+  const data = loadData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type:"application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "allowance-backup.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const obj = JSON.parse(reader.result);
+      if (!obj || typeof obj !== "object") throw new Error("格式不对");
+      localStorage.setItem(KEY, JSON.stringify(obj));
+      render();
+      alert("导入完成。");
+    } catch (e) {
+      alert("导入失败：" + e.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Service worker register
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
+
+// Events
+document.getElementById("btnAddChild").addEventListener("click", addChild);
+document.getElementById("childSelect").addEventListener("change", render);
+document.getElementById("weeklyBase").addEventListener("change", updateWeeklyBase);
+
+["wkSaving","wkSpending","wkInvestment"].forEach(id => {
+  document.getElementById(id).addEventListener("input", render);
+});
+
+document.getElementById("btnSubmitWeek").addEventListener("click", submitWeek);
+document.getElementById("btnResetWeek").addEventListener("click", resetWeek);
+document.getElementById("btnAddTx").addEventListener("click", addTx);
+
+document.getElementById("btnExport").addEventListener("click", exportData);
+document.getElementById("btnImport").addEventListener("click", () => document.getElementById("fileImport").click());
+document.getElementById("fileImport").addEventListener("change", (e) => {
+  if (e.target.files && e.target.files[0]) importData(e.target.files[0]);
+});
+
+render();
+</script>
+</body>
+</html>
