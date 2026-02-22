@@ -43,6 +43,14 @@
     .lang-toggle { display:flex; gap:6px; }
     .lang-btn { width:auto; padding:8px 12px; background:#0b1220; border:1px solid #374151; border-radius:10px; cursor:pointer; font-weight:600; }
     .lang-btn.active { background:#2563eb; border-color:#2563eb; }
+    .modal-backdrop { position:fixed; inset:0; background:rgba(2,6,23,0.65); display:flex; align-items:center; justify-content:center; z-index:50; }
+    .modal-backdrop.hidden { display:none; }
+    .modal { width:min(720px, 92vw); background:#111827; border:1px solid #1f2937; border-radius:16px; padding:16px; }
+    .modal-title { font-size:18px; margin: 2px 0 10px; }
+    .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:12px; }
+    .danger:disabled { background:#1f2937; border-color:#374151; color:#6b7280; cursor:not-allowed; }
+    .icon-quiet { width:40px; padding:10px; display:flex; align-items:center; justify-content:center; background:#0b1220; border:1px solid #374151; border-radius:10px; cursor:pointer; font-size:18px; line-height:1; }
+    .modal-sm { width:min(420px, 92vw); }
   </style>
 </head>
 <body>
@@ -51,6 +59,10 @@
     <div class="grow">
       <h1 data-i18n="title">💰 Allowance Tracker（Saving / Spending / Investment）</h1>
       <div class="muted" data-i18n="subtitle">跨平台运行：iPhone/iPad/Android 都行。人类终于做对一件事：用浏览器。</div>
+    </div>
+    <div class="col" style="min-width:220px;">
+      <label class="muted" data-i18n="label_select_child">选择档案</label>
+      <select id="mainChildSelect"></select>
     </div>
     <div class="topbar-right">
       <div class="settings">
@@ -64,6 +76,11 @@
           </div>
           <div class="row" style="margin-top:10px;">
             <div class="col">
+              <button class="secondary" id="btnManageChildren" data-i18n="btn_manage_children">管理孩子</button>
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <div class="col">
               <button class="secondary" id="btnExport" data-i18n="btn_export">导出数据</button>
             </div>
             <div class="col">
@@ -73,27 +90,6 @@
         </div>
       </div>
       <input type="file" id="fileImport" accept="application/json" style="display:none" />
-    </div>
-  </div>
-
-  <div class="card">
-    <h2 data-i18n="section_children">👧🧒 孩子</h2>
-    <div class="row">
-      <div class="col">
-        <label class="muted" data-i18n="label_select_child">选择孩子</label>
-        <select id="childSelect"></select>
-      </div>
-      <div class="col">
-        <label class="muted" data-i18n="label_add_child">添加孩子</label>
-        <div class="row">
-          <div class="col"><input id="childName" data-i18n-placeholder="placeholder_child_name" placeholder="例如：Luna / Stella" /></div>
-          <div class="col"><button id="btnAddChild" data-i18n="btn_add_child">添加</button></div>
-        </div>
-      </div>
-      <div class="col">
-        <label class="muted" data-i18n="label_weekly_base">每周零花钱基准（默认 $5）</label>
-        <input id="weeklyBase" type="number" min="0" step="1" />
-      </div>
     </div>
   </div>
 
@@ -191,11 +187,51 @@
   </div>
 </div>
 
+<div class="modal-backdrop hidden" id="childrenModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="childrenModalTitle">
+    <div class="modal-title" id="childrenModalTitle" data-i18n="modal_children_title">👧🧒 孩子管理</div>
+    <div class="row">
+      <div class="col">
+        <label class="muted" data-i18n="label_select_child">选择孩子</label>
+        <select id="childSelect"></select>
+      </div>
+      <div class="col">
+        <label class="muted" data-i18n="label_weekly_base">每周零花钱基准（默认 $5）</label>
+        <input id="weeklyBase" type="number" min="0" step="1" />
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <div class="col">
+        <button class="secondary" id="btnOpenAddChild" data-i18n="btn_open_add_child">添加孩子</button>
+      </div>
+      <div class="col">
+        <button class="danger" id="btnDeleteChild" type="button" data-i18n="btn_delete_child">删除孩子</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="secondary" id="btnCancelChildren" data-i18n="btn_cancel">取消</button>
+      <button id="btnSaveChildren" data-i18n="btn_save">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="addChildModal">
+  <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="addChildTitle">
+    <div class="modal-title" id="addChildTitle" data-i18n="label_add_child">添加档案</div>
+    <label class="muted" data-i18n="label_add_child">添加档案</label>
+    <input id="childName" data-i18n-placeholder="placeholder_child_name" placeholder="例如：Luna / Stella" />
+    <div class="modal-actions">
+      <button class="secondary" id="btnCancelAddChild" data-i18n="btn_cancel">取消</button>
+      <button id="btnAddChild" data-i18n="btn_add_child">添加</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /** ---------- Storage Model ----------
  * data = {
  *  version: 1,
- *  settings: { weeklyBaseDefault: 5 },
+ *  settings: { weeklyBaseDefault: 5, lang: "zh", activeChildId?: number },
  *  children: [{ id, name, createdAt, weeklyBase? }],
  *  weekly: [{ childId, weekKey, base, saving, spending, investment, ts, note }],
  *  txs: [{ childId, ts, category, type, amount, note, meta }]
@@ -208,16 +244,22 @@ const I18N = {
     subtitle: "跨平台运行：iPhone/iPad/Android 都行。人类终于做对一件事：用浏览器。",
     btn_export: "导出数据",
     btn_import: "导入数据",
+    btn_manage_children: "管理档案",
     settings_title: "设置",
     settings_button: "设置",
+    btn_delete_child: "删除档案",
+    btn_open_add_child: "添加档案",
     language_label: "语言",
     lang_zh: "中文",
     lang_en: "English",
-    section_children: "👧🧒 孩子",
-    label_select_child: "选择孩子",
-    label_add_child: "添加孩子",
+    section_children: "👧🧒 档案",
+    modal_children_title: "👧🧒 档案管理",
+    label_select_child: "选择档案",
+    label_add_child: "添加档案",
     placeholder_child_name: "例如：Luna / Stella",
     btn_add_child: "添加",
+    btn_save: "保存",
+    btn_cancel: "取消",
     label_weekly_base: "每周零花钱基准（默认 $5）",
     section_overview: "📌 余额概览",
     section_weekly: "⏰ 每周分配（必须刚好等于每周基准）",
@@ -257,7 +299,7 @@ const I18N = {
     weekly_done: "✅ 本周已完成分配：Saving {saving} / Spending {spending} / Investment {investment}（基准 {base}）",
     weekly_todo: "⏰ 本周还没分配零花钱。请把 {base} 分配到三类里（合计必须刚好等于基准）。",
     weekly_sum: "当前合计：{sum}（需要等于 {base}）",
-    alert_name_empty: "孩子名字不能为空。人类起名还是很重要的。",
+    alert_name_empty: "档案名字不能为空。人类起名还是很重要的。",
     alert_week_exists: "本周已经提交过了。要改请先删除本周分配（谨慎按钮）。",
     alert_sum_mismatch: "合计必须刚好等于 {base}。你现在是 {sum}。",
     alert_no_week: "本周还没提交过，不用删。",
@@ -267,6 +309,8 @@ const I18N = {
     alert_spend_insufficient: "Spending 余额不足：当前 {balance}",
     alert_import_done: "导入完成。",
     alert_import_failed: "导入失败：{message}",
+    prompt_delete_child: "将删除该档案的所有账本与每周记录。请输入档案名字以确认删除：{name}",
+    alert_delete_child_mismatch: "名字不匹配，已取消删除。",
     note_weekly_allocation: "Weekly allowance allocation",
     note_match_weekly: "Auto match +50% (weekly)",
     note_match: "Auto match +50%"
@@ -276,16 +320,22 @@ const I18N = {
     subtitle: "Runs on iPhone/iPad/Android. We finally did something right: use the browser.",
     btn_export: "Export data",
     btn_import: "Import data",
+    btn_manage_children: "Manage profiles",
     settings_title: "Settings",
     settings_button: "Settings",
+    btn_delete_child: "Delete profile",
+    btn_open_add_child: "Add profile",
     language_label: "Language",
     lang_zh: "Chinese",
     lang_en: "English",
-    section_children: "👧🧒 Children",
-    label_select_child: "Select child",
-    label_add_child: "Add child",
+    section_children: "👧🧒 Profiles",
+    modal_children_title: "👧🧒 Manage profiles",
+    label_select_child: "Select profile",
+    label_add_child: "Add profile",
     placeholder_child_name: "e.g. Luna / Stella",
     btn_add_child: "Add",
+    btn_save: "Save",
+    btn_cancel: "Cancel",
     label_weekly_base: "Weekly allowance base (default $5)",
     section_overview: "📌 Balance Overview",
     section_weekly: "⏰ Weekly Allocation (must equal the weekly base)",
@@ -325,7 +375,7 @@ const I18N = {
     weekly_done: "✅ This week is done: Saving {saving} / Spending {spending} / Investment {investment} (base {base})",
     weekly_todo: "⏰ This week isn't allocated yet. Split {base} into the three categories (sum must equal base).",
     weekly_sum: "Current total: {sum} (must equal {base})",
-    alert_name_empty: "Child name can't be empty.",
+    alert_name_empty: "Profile name can't be empty.",
     alert_week_exists: "This week is already submitted. Delete the weekly allocation first to change it.",
     alert_sum_mismatch: "Sum must equal {base}. You have {sum}.",
     alert_no_week: "This week hasn't been submitted yet.",
@@ -335,12 +385,15 @@ const I18N = {
     alert_spend_insufficient: "Not enough Spending balance: {balance}",
     alert_import_done: "Import complete.",
     alert_import_failed: "Import failed: {message}",
+    prompt_delete_child: "This will remove all ledger and weekly records for this profile. Type the profile name to confirm deletion: {name}",
+    alert_delete_child_mismatch: "Name does not match. Deletion canceled.",
     note_weekly_allocation: "Weekly allowance allocation",
     note_match_weekly: "Auto match +50% (weekly)",
     note_match: "Auto match +50%"
   }
 };
 let currentLang = "zh";
+let stagedData = null;
 
 function t(key, vars = {}) {
   const table = I18N[currentLang] || I18N.en || {};
@@ -370,7 +423,7 @@ function loadData() {
   if (!raw) {
     const init = {
       version: 1,
-      settings: { weeklyBaseDefault: 5, lang: "zh" },
+      settings: { weeklyBaseDefault: 5, lang: "zh", activeChildId: 0 },
       children: [],
       weekly: [],
       txs: []
@@ -403,6 +456,10 @@ function normalizeData(data) {
     data.settings.lang = "zh";
     changed = true;
   }
+  if (data.settings.activeChildId == null) {
+    data.settings.activeChildId = 0;
+    changed = true;
+  }
   if (changed) saveData(data);
   return data;
 }
@@ -427,8 +484,8 @@ function isoWeekKey(d = new Date()) {
 }
 function clampZero(n) { return Math.abs(n) < 1e-9 ? 0 : n; }
 
-function getSelectedChildId() {
-  return Number(document.getElementById("childSelect").value || 0);
+function getSelectedChildId(data) {
+  return Number(data?.settings?.activeChildId || 0);
 }
 function getChildById(data, id) {
   return data.children.find(c => c.id === id);
@@ -463,25 +520,28 @@ function render() {
     currentLang = nextLang;
   }
   applyI18n();
-  const childSelect = document.getElementById("childSelect");
-  childSelect.innerHTML = "";
+  if (data.children.length && !data.settings.activeChildId) {
+    data.settings.activeChildId = data.children[0].id;
+    saveData(data);
+  }
+
+  const mainChildSelect = document.getElementById("mainChildSelect");
+  mainChildSelect.innerHTML = "";
   for (const c of data.children) {
     const opt = document.createElement("option");
     opt.value = c.id;
     opt.textContent = c.name;
-    childSelect.appendChild(opt);
+    mainChildSelect.appendChild(opt);
   }
+  mainChildSelect.value = data.settings.activeChildId || "";
 
-  // Auto-select first child
-  if (data.children.length && !childSelect.value) childSelect.value = data.children[0].id;
-
-  const childId = getSelectedChildId();
+  const childId = getSelectedChildId(data);
   const child = getChildById(data, childId);
 
   // weekly base
   const weeklyBaseInput = document.getElementById("weeklyBase");
   const base = child?.weeklyBase ?? data.settings.weeklyBaseDefault ?? 5;
-  weeklyBaseInput.value = base;
+  if (weeklyBaseInput) weeklyBaseInput.value = base;
 
   // metrics
   const balances = child ? computeBalances(data, childId) : { saving:0, spending:0, investment:0 };
@@ -565,31 +625,94 @@ function render() {
   }
 }
 
-function addChild() {
-  const data = loadData();
-  const name = document.getElementById("childName").value.trim();
-  if (!name) return alert(t("alert_name_empty"));
-  const id = Date.now();
-  data.children.push({ id, name, createdAt: nowISO() });
-  saveData(data);
-  document.getElementById("childName").value = "";
-  render();
+function renderChildrenDialog() {
+  if (!stagedData) return;
+  const childSelect = document.getElementById("childSelect");
+  childSelect.innerHTML = "";
+  for (const c of stagedData.children) {
+    const opt = document.createElement("option");
+    opt.value = c.id;
+    opt.textContent = c.name;
+    childSelect.appendChild(opt);
+  }
+  if (stagedData.children.length && !stagedData.settings.activeChildId) {
+    stagedData.settings.activeChildId = stagedData.children[0].id;
+  }
+  childSelect.value = stagedData.settings.activeChildId || "";
+  const child = getChildById(stagedData, Number(childSelect.value || 0));
+  const deleteBtn = document.getElementById("btnDeleteChild");
+  deleteBtn.disabled = !child;
+  const weeklyBaseInput = document.getElementById("weeklyBase");
+  const base = child?.weeklyBase ?? stagedData.settings.weeklyBaseDefault ?? 5;
+  weeklyBaseInput.value = base;
 }
 
-function updateWeeklyBase() {
-  const data = loadData();
-  const childId = getSelectedChildId();
-  const child = getChildById(data, childId);
+function addChildStaged() {
+  if (!stagedData) return;
+  const nameInput = document.getElementById("childName");
+  const name = nameInput.value.trim();
+  if (!name) return alert(t("alert_name_empty"));
+  const id = Date.now();
+  stagedData.children.push({ id, name, createdAt: nowISO() });
+  stagedData.settings.activeChildId = id;
+  nameInput.value = "";
+  document.getElementById("addChildModal").classList.add("hidden");
+  renderChildrenDialog();
+}
+
+function updateWeeklyBaseStaged() {
+  if (!stagedData) return;
+  const childId = Number(document.getElementById("childSelect").value || 0);
+  const child = getChildById(stagedData, childId);
   const val = Number(document.getElementById("weeklyBase").value || 5);
   if (!child) return;
   child.weeklyBase = val;
-  saveData(data);
+  renderChildrenDialog();
+}
+
+function deleteChildStaged() {
+  if (!stagedData) return;
+  const childId = Number(document.getElementById("childSelect").value || 0);
+  if (!childId) return;
+  const child = getChildById(stagedData, childId);
+  if (!child) return;
+  const typed = prompt(t("prompt_delete_child", { name: child.name })) || "";
+  if (typed.trim() !== child.name) return alert(t("alert_delete_child_mismatch"));
+  stagedData.children = stagedData.children.filter(c => c.id !== childId);
+  stagedData.weekly = stagedData.weekly.filter(w => w.childId !== childId);
+  stagedData.txs = stagedData.txs.filter(t => t.childId !== childId);
+  if (stagedData.settings.activeChildId === childId) {
+    stagedData.settings.activeChildId = stagedData.children[0]?.id || 0;
+  }
+  renderChildrenDialog();
+}
+
+function openChildrenDialog() {
+  const data = loadData();
+  stagedData = JSON.parse(JSON.stringify(data));
+  const modal = document.getElementById("childrenModal");
+  modal.classList.remove("hidden");
+  applyI18n();
+  renderChildrenDialog();
+}
+
+function closeChildrenDialog(applyChanges) {
+  const modal = document.getElementById("childrenModal");
+  document.getElementById("addChildModal").classList.add("hidden");
+  if (applyChanges && stagedData) {
+    if (stagedData.children.length && !stagedData.settings.activeChildId) {
+      stagedData.settings.activeChildId = stagedData.children[0].id;
+    }
+    saveData(stagedData);
+  }
+  stagedData = null;
+  modal.classList.add("hidden");
   render();
 }
 
 function submitWeek() {
   const data = loadData();
-  const childId = getSelectedChildId();
+  const childId = getSelectedChildId(data);
   const child = getChildById(data, childId);
   if (!child) return;
 
@@ -627,7 +750,7 @@ function submitWeek() {
 
 function resetWeek() {
   const data = loadData();
-  const childId = getSelectedChildId();
+  const childId = getSelectedChildId(data);
   const child = getChildById(data, childId);
   if (!child) return;
   const weekKey = isoWeekKey(new Date());
@@ -639,7 +762,7 @@ function resetWeek() {
 
 function addTx() {
   const data = loadData();
-  const childId = getSelectedChildId();
+  const childId = getSelectedChildId(data);
   const child = getChildById(data, childId);
   if (!child) return;
 
@@ -703,10 +826,6 @@ if ("serviceWorker" in navigator) {
 }
 
 // Events
-document.getElementById("btnAddChild").addEventListener("click", addChild);
-document.getElementById("childSelect").addEventListener("change", render);
-document.getElementById("weeklyBase").addEventListener("change", updateWeeklyBase);
-
 ["wkSaving","wkSpending","wkInvestment"].forEach(id => {
   document.getElementById(id).addEventListener("input", render);
 });
@@ -721,8 +840,40 @@ document.getElementById("fileImport").addEventListener("change", (e) => {
   if (e.target.files && e.target.files[0]) importData(e.target.files[0]);
 });
 
+document.getElementById("mainChildSelect").addEventListener("change", (e) => {
+  const data = loadData();
+  data.settings.activeChildId = Number(e.target.value || 0);
+  saveData(data);
+  render();
+});
+
 const settingsBtn = document.getElementById("btnSettings");
 const settingsPanel = document.getElementById("settingsPanel");
+document.getElementById("btnManageChildren").addEventListener("click", () => {
+  settingsPanel.classList.add("hidden");
+  openChildrenDialog();
+});
+document.getElementById("btnCancelChildren").addEventListener("click", () => closeChildrenDialog(false));
+document.getElementById("btnSaveChildren").addEventListener("click", () => closeChildrenDialog(true));
+document.getElementById("btnAddChild").addEventListener("click", addChildStaged);
+document.getElementById("btnDeleteChild").addEventListener("click", deleteChildStaged);
+document.getElementById("btnOpenAddChild").addEventListener("click", () => {
+  document.getElementById("addChildModal").classList.remove("hidden");
+  applyI18n();
+  document.getElementById("childName").focus();
+});
+document.getElementById("btnCancelAddChild").addEventListener("click", () => {
+  const modal = document.getElementById("addChildModal");
+  modal.classList.add("hidden");
+  document.getElementById("childName").value = "";
+});
+document.getElementById("childSelect").addEventListener("change", (e) => {
+  if (!stagedData) return;
+  stagedData.settings.activeChildId = Number(e.target.value || 0);
+  renderChildrenDialog();
+});
+document.getElementById("weeklyBase").addEventListener("change", updateWeeklyBaseStaged);
+
 settingsBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   settingsPanel.classList.toggle("hidden");
