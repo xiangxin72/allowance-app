@@ -33,77 +33,105 @@
     th { color:#9ca3af; font-weight:600; }
     .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; background:#0b1220; border:1px solid #374151; color:#cbd5e1; }
     .topbar { display:flex; gap:10px; align-items:center; flex-wrap: wrap; }
+    .topbar-right { display:flex; gap:10px; align-items:center; margin-left:auto; flex-wrap: wrap; }
     .grow { flex:1; min-width: 220px; }
+    .icon-button { width:40px; padding:10px; display:flex; align-items:center; justify-content:center; background:#374151; border:none; border-radius:12px; cursor:pointer; }
+    .settings { position:relative; }
+    .settings-panel { position:absolute; right:0; top:46px; background:#111827; border:1px solid #1f2937; padding:10px; border-radius:12px; min-width:200px; z-index:10; }
+    .settings-panel.hidden { display:none; }
+    .settings-panel .muted { display:block; margin-bottom:6px; }
+    .lang-toggle { display:flex; gap:6px; }
+    .lang-btn { width:auto; padding:8px 12px; background:#0b1220; border:1px solid #374151; border-radius:10px; cursor:pointer; font-weight:600; }
+    .lang-btn.active { background:#2563eb; border-color:#2563eb; }
   </style>
 </head>
 <body>
 <div class="wrap">
   <div class="topbar">
     <div class="grow">
-      <h1>💰 Allowance Tracker（Saving / Spending / Investment）</h1>
-      <div class="muted">跨平台运行：iPhone/iPad/Android 都行。人类终于做对一件事：用浏览器。 </div>
+      <h1 data-i18n="title">💰 Allowance Tracker（Saving / Spending / Investment）</h1>
+      <div class="muted" data-i18n="subtitle">跨平台运行：iPhone/iPad/Android 都行。人类终于做对一件事：用浏览器。</div>
     </div>
-    <button class="secondary" id="btnExport">导出数据</button>
-    <button class="secondary" id="btnImport">导入数据</button>
-    <input type="file" id="fileImport" accept="application/json" style="display:none" />
+    <div class="topbar-right">
+      <div class="settings">
+        <button class="icon-button" id="btnSettings" data-i18n-aria="settings_button" aria-label="Settings">⚙️</button>
+        <div class="settings-panel hidden" id="settingsPanel">
+          <span class="muted" data-i18n="settings_title">设置</span>
+          <label class="muted" data-i18n="language_label">语言</label>
+          <div class="lang-toggle" id="langToggle">
+            <button class="lang-btn" type="button" data-lang="en">En</button>
+            <button class="lang-btn" type="button" data-lang="zh">中</button>
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <div class="col">
+              <button class="secondary" id="btnExport" data-i18n="btn_export">导出数据</button>
+            </div>
+            <div class="col">
+              <button class="secondary" id="btnImport" data-i18n="btn_import">导入数据</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <input type="file" id="fileImport" accept="application/json" style="display:none" />
+    </div>
   </div>
 
   <div class="card">
-    <h2>👧🧒 孩子</h2>
+    <h2 data-i18n="section_children">👧🧒 孩子</h2>
     <div class="row">
       <div class="col">
-        <label class="muted">选择孩子</label>
+        <label class="muted" data-i18n="label_select_child">选择孩子</label>
         <select id="childSelect"></select>
       </div>
       <div class="col">
-        <label class="muted">添加孩子</label>
+        <label class="muted" data-i18n="label_add_child">添加孩子</label>
         <div class="row">
-          <div class="col"><input id="childName" placeholder="例如：Luna / Stella" /></div>
-          <div class="col"><button id="btnAddChild">添加</button></div>
+          <div class="col"><input id="childName" data-i18n-placeholder="placeholder_child_name" placeholder="例如：Luna / Stella" /></div>
+          <div class="col"><button id="btnAddChild" data-i18n="btn_add_child">添加</button></div>
         </div>
       </div>
       <div class="col">
-        <label class="muted">每周零花钱基准（默认 $5）</label>
+        <label class="muted" data-i18n="label_weekly_base">每周零花钱基准（默认 $5）</label>
         <input id="weeklyBase" type="number" min="0" step="1" />
       </div>
     </div>
   </div>
 
   <div class="card">
-    <h2>📌 余额概览</h2>
+    <h2 data-i18n="section_overview">📌 余额概览</h2>
     <div class="row" id="metrics"></div>
     <div class="muted" id="weekInfo" style="margin-top:10px;"></div>
   </div>
 
   <div class="card" id="weeklyCard">
-    <h2>⏰ 每周分配（必须刚好等于每周基准）</h2>
+    <h2 data-i18n="section_weekly">⏰ 每周分配（必须刚好等于每周基准）</h2>
     <div id="weeklyStatus" class="card warn" style="margin: 0 0 12px;"></div>
 
     <div class="row">
       <div class="col">
-        <label class="muted">Saving（锁定）</label>
+        <label class="muted" data-i18n="label_saving_locked">Saving（锁定）</label>
         <input id="wkSaving" type="number" min="0" step="1" value="0" />
       </div>
       <div class="col">
-        <label class="muted">Spending（可花）</label>
+        <label class="muted" data-i18n="label_spending_free">Spending（可花）</label>
         <input id="wkSpending" type="number" min="0" step="1" value="5" />
       </div>
       <div class="col">
-        <label class="muted">Investment（+50% match）</label>
+        <label class="muted" data-i18n="label_investment_match">Investment（+50% match）</label>
         <input id="wkInvestment" type="number" min="0" step="1" value="0" />
       </div>
       <div class="col">
-        <label class="muted">备注（可选）</label>
-        <input id="wkNote" placeholder="比如：本周表现/奖励原因" />
+        <label class="muted" data-i18n="label_note_optional">备注（可选）</label>
+        <input id="wkNote" data-i18n-placeholder="placeholder_week_note" placeholder="比如：本周表现/奖励原因" />
       </div>
     </div>
 
     <div class="row" style="margin-top:10px;">
       <div class="col">
-        <button id="btnSubmitWeek">✅ 提交本周分配</button>
+        <button id="btnSubmitWeek" data-i18n="btn_submit_week">✅ 提交本周分配</button>
       </div>
       <div class="col">
-        <button class="danger" id="btnResetWeek">（谨慎）删除本周分配</button>
+        <button class="danger" id="btnResetWeek" data-i18n="btn_reset_week">（谨慎）删除本周分配</button>
       </div>
       <div class="col">
         <div class="muted" id="wkSum"></div>
@@ -112,49 +140,49 @@
   </div>
 
   <div class="card">
-    <h2>➕ 记一笔（额外存入或花费）</h2>
+    <h2 data-i18n="section_tx">➕ 记一笔（额外存入或花费）</h2>
     <div class="row">
       <div class="col">
-        <label class="muted">类型</label>
+        <label class="muted" data-i18n="label_tx_type">类型</label>
         <select id="txType">
-          <option value="deposit">Deposit（存入）</option>
-          <option value="spend">Spend（花费，仅 Spending）</option>
+          <option value="deposit" data-i18n="opt_deposit">Deposit（存入）</option>
+          <option value="spend" data-i18n="opt_spend">Spend（花费，仅 Spending）</option>
         </select>
       </div>
       <div class="col">
-        <label class="muted">类别</label>
+        <label class="muted" data-i18n="label_tx_category">类别</label>
         <select id="txCategory">
-          <option value="saving">Saving</option>
-          <option value="spending" selected>Spending</option>
-          <option value="investment">Investment</option>
+          <option value="saving" data-i18n="opt_cat_saving">Saving</option>
+          <option value="spending" selected data-i18n="opt_cat_spending">Spending</option>
+          <option value="investment" data-i18n="opt_cat_investment">Investment</option>
         </select>
       </div>
       <div class="col">
-        <label class="muted">金额</label>
+        <label class="muted" data-i18n="label_tx_amount">金额</label>
         <input id="txAmount" type="number" min="0" step="1" value="1" />
       </div>
       <div class="col">
-        <label class="muted">备注</label>
-        <input id="txNote" placeholder="买了啥/为啥存" />
+        <label class="muted" data-i18n="label_tx_note">备注</label>
+        <input id="txNote" data-i18n-placeholder="placeholder_tx_note" placeholder="买了啥/为啥存" />
       </div>
       <div class="col">
         <label class="muted"> </label>
-        <button id="btnAddTx">记录</button>
+        <button id="btnAddTx" data-i18n="btn_add_tx">记录</button>
       </div>
     </div>
-    <div class="muted" style="margin-top:8px;">
+    <div class="muted" style="margin-top:8px;" data-i18n="tx_hint">
       Saving 不允许花费。Investment 存入会自动加 50% match。
     </div>
   </div>
 
   <div class="card">
-    <h2>📒 账本</h2>
-    <div class="muted" style="margin-bottom:8px;">最近记录在上面。Investment 匹配会显示 meta=match。</div>
+    <h2 data-i18n="section_ledger">📒 账本</h2>
+    <div class="muted" style="margin-bottom:8px;" data-i18n="ledger_hint">最近记录在上面。Investment 匹配会显示 meta=match。</div>
     <div style="overflow:auto;">
       <table>
         <thead>
           <tr>
-            <th>时间</th><th>类别</th><th>类型</th><th>金额</th><th>备注</th><th>meta</th>
+            <th data-i18n="th_time">时间</th><th data-i18n="th_category">类别</th><th data-i18n="th_type">类型</th><th data-i18n="th_amount">金额</th><th data-i18n="th_note">备注</th><th data-i18n="th_meta">meta</th>
           </tr>
         </thead>
         <tbody id="ledger"></tbody>
@@ -174,13 +202,175 @@
  * }
  */
 const KEY = "allowance_pwa_v1";
+const I18N = {
+  zh: {
+    title: "💰 零花钱账本（Saving / Spending / Investment）",
+    subtitle: "跨平台运行：iPhone/iPad/Android 都行。人类终于做对一件事：用浏览器。",
+    btn_export: "导出数据",
+    btn_import: "导入数据",
+    settings_title: "设置",
+    settings_button: "设置",
+    language_label: "语言",
+    lang_zh: "中文",
+    lang_en: "English",
+    section_children: "👧🧒 孩子",
+    label_select_child: "选择孩子",
+    label_add_child: "添加孩子",
+    placeholder_child_name: "例如：Luna / Stella",
+    btn_add_child: "添加",
+    label_weekly_base: "每周零花钱基准（默认 $5）",
+    section_overview: "📌 余额概览",
+    section_weekly: "⏰ 每周分配（必须刚好等于每周基准）",
+    label_saving_locked: "Saving（锁定）",
+    label_spending_free: "Spending（可花）",
+    label_investment_match: "Investment（+50% match）",
+    label_note_optional: "备注（可选）",
+    placeholder_week_note: "比如：本周表现/奖励原因",
+    btn_submit_week: "✅ 提交本周分配",
+    btn_reset_week: "（谨慎）删除本周分配",
+    section_tx: "➕ 记一笔（额外存入或花费）",
+    label_tx_type: "类型",
+    label_tx_category: "类别",
+    label_tx_amount: "金额",
+    label_tx_note: "备注",
+    placeholder_tx_note: "买了啥/为啥存",
+    btn_add_tx: "记录",
+    tx_hint: "Saving 不允许花费。Investment 存入会自动加 50% match。",
+    section_ledger: "📒 账本",
+    ledger_hint: "最近记录在上面。Investment 匹配会显示 meta=match。",
+    th_time: "时间",
+    th_category: "类别",
+    th_type: "类型",
+    th_amount: "金额",
+    th_note: "备注",
+    th_meta: "meta",
+    opt_deposit: "Deposit（存入）",
+    opt_spend: "Spend（花费，仅 Spending）",
+    opt_cat_saving: "Saving",
+    opt_cat_spending: "Spending",
+    opt_cat_investment: "Investment",
+    metric_saving: "Saving（锁定）",
+    metric_spending: "Spending（可花）",
+    metric_investment: "Investment（含匹配）",
+    metric_total: "Total（总资产）",
+    week_info: "当前周：{weekKey}（按 ISO 周计算）",
+    weekly_done: "✅ 本周已完成分配：Saving {saving} / Spending {spending} / Investment {investment}（基准 {base}）",
+    weekly_todo: "⏰ 本周还没分配零花钱。请把 {base} 分配到三类里（合计必须刚好等于基准）。",
+    weekly_sum: "当前合计：{sum}（需要等于 {base}）",
+    alert_name_empty: "孩子名字不能为空。人类起名还是很重要的。",
+    alert_week_exists: "本周已经提交过了。要改请先删除本周分配（谨慎按钮）。",
+    alert_sum_mismatch: "合计必须刚好等于 {base}。你现在是 {sum}。",
+    alert_no_week: "本周还没提交过，不用删。",
+    confirm_delete_week: "确定删除本周分配？会同时删除本周的三类入账交易（不会删除其他交易）。",
+    alert_amount_positive: "金额得大于 0。",
+    alert_spend_category: "花费只能从 Spending。Saving 锁死，Investment 这里先不做卖出。",
+    alert_spend_insufficient: "Spending 余额不足：当前 {balance}",
+    alert_import_done: "导入完成。",
+    alert_import_failed: "导入失败：{message}",
+    note_weekly_allocation: "Weekly allowance allocation",
+    note_match_weekly: "Auto match +50% (weekly)",
+    note_match: "Auto match +50%"
+  },
+  en: {
+    title: "💰 Allowance Tracker (Saving / Spending / Investment)",
+    subtitle: "Runs on iPhone/iPad/Android. We finally did something right: use the browser.",
+    btn_export: "Export data",
+    btn_import: "Import data",
+    settings_title: "Settings",
+    settings_button: "Settings",
+    language_label: "Language",
+    lang_zh: "Chinese",
+    lang_en: "English",
+    section_children: "👧🧒 Children",
+    label_select_child: "Select child",
+    label_add_child: "Add child",
+    placeholder_child_name: "e.g. Luna / Stella",
+    btn_add_child: "Add",
+    label_weekly_base: "Weekly allowance base (default $5)",
+    section_overview: "📌 Balance Overview",
+    section_weekly: "⏰ Weekly Allocation (must equal the weekly base)",
+    label_saving_locked: "Saving (locked)",
+    label_spending_free: "Spending (spendable)",
+    label_investment_match: "Investment (+50% match)",
+    label_note_optional: "Note (optional)",
+    placeholder_week_note: "e.g. behavior/reward reason",
+    btn_submit_week: "✅ Submit this week",
+    btn_reset_week: "(Careful) Delete this week",
+    section_tx: "➕ Add a transaction (extra deposit or spend)",
+    label_tx_type: "Type",
+    label_tx_category: "Category",
+    label_tx_amount: "Amount",
+    label_tx_note: "Note",
+    placeholder_tx_note: "what was bought/why deposit",
+    btn_add_tx: "Record",
+    tx_hint: "Saving cannot be spent. Investment deposits auto add 50% match.",
+    section_ledger: "📒 Ledger",
+    ledger_hint: "Latest records on top. Investment match shows meta=match.",
+    th_time: "Time",
+    th_category: "Category",
+    th_type: "Type",
+    th_amount: "Amount",
+    th_note: "Note",
+    th_meta: "meta",
+    opt_deposit: "Deposit",
+    opt_spend: "Spend (Spending only)",
+    opt_cat_saving: "Saving",
+    opt_cat_spending: "Spending",
+    opt_cat_investment: "Investment",
+    metric_saving: "Saving (locked)",
+    metric_spending: "Spending (spendable)",
+    metric_investment: "Investment (incl. match)",
+    metric_total: "Total",
+    week_info: "Current week: {weekKey} (ISO week)",
+    weekly_done: "✅ This week is done: Saving {saving} / Spending {spending} / Investment {investment} (base {base})",
+    weekly_todo: "⏰ This week isn't allocated yet. Split {base} into the three categories (sum must equal base).",
+    weekly_sum: "Current total: {sum} (must equal {base})",
+    alert_name_empty: "Child name can't be empty.",
+    alert_week_exists: "This week is already submitted. Delete the weekly allocation first to change it.",
+    alert_sum_mismatch: "Sum must equal {base}. You have {sum}.",
+    alert_no_week: "This week hasn't been submitted yet.",
+    confirm_delete_week: "Delete this week's allocation? This will also remove this week's deposit transactions (other transactions remain).",
+    alert_amount_positive: "Amount must be greater than 0.",
+    alert_spend_category: "Spending can only be spent from Spending. Saving is locked; Investment sell is not supported here.",
+    alert_spend_insufficient: "Not enough Spending balance: {balance}",
+    alert_import_done: "Import complete.",
+    alert_import_failed: "Import failed: {message}",
+    note_weekly_allocation: "Weekly allowance allocation",
+    note_match_weekly: "Auto match +50% (weekly)",
+    note_match: "Auto match +50%"
+  }
+};
+let currentLang = "zh";
+
+function t(key, vars = {}) {
+  const table = I18N[currentLang] || I18N.en || {};
+  const fallback = I18N.en || {};
+  const raw = table[key] || fallback[key] || key;
+  return raw.replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? ""));
+}
+
+function applyI18n() {
+  document.documentElement.lang = currentLang === "en" ? "en" : "zh";
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+    el.setAttribute("placeholder", t(el.dataset.i18nPlaceholder));
+  });
+  document.querySelectorAll("[data-i18n-aria]").forEach(el => {
+    el.setAttribute("aria-label", t(el.dataset.i18nAria));
+  });
+  document.querySelectorAll("#langToggle .lang-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.lang === currentLang);
+  });
+}
 
 function loadData() {
   const raw = localStorage.getItem(KEY);
   if (!raw) {
     const init = {
       version: 1,
-      settings: { weeklyBaseDefault: 5 },
+      settings: { weeklyBaseDefault: 5, lang: "zh" },
       children: [],
       weekly: [],
       txs: []
@@ -188,13 +378,33 @@ function loadData() {
     localStorage.setItem(KEY, JSON.stringify(init));
     return init;
   }
-  try { return JSON.parse(raw); } catch {
+  try {
+    const obj = JSON.parse(raw);
+    return normalizeData(obj);
+  } catch {
     localStorage.removeItem(KEY);
     return loadData();
   }
 }
 function saveData(data) {
   localStorage.setItem(KEY, JSON.stringify(data));
+}
+function normalizeData(data) {
+  let changed = false;
+  if (!data.settings) {
+    data.settings = {};
+    changed = true;
+  }
+  if (data.settings.weeklyBaseDefault == null) {
+    data.settings.weeklyBaseDefault = 5;
+    changed = true;
+  }
+  if (!data.settings.lang) {
+    data.settings.lang = "zh";
+    changed = true;
+  }
+  if (changed) saveData(data);
+  return data;
 }
 
 function money(x) {
@@ -248,6 +458,11 @@ function computeBalances(data, childId) {
 
 function render() {
   const data = loadData();
+  const nextLang = data.settings?.lang || "zh";
+  if (nextLang !== currentLang) {
+    currentLang = nextLang;
+  }
+  applyI18n();
   const childSelect = document.getElementById("childSelect");
   childSelect.innerHTML = "";
   for (const c of data.children) {
@@ -274,10 +489,10 @@ function render() {
   const metrics = document.getElementById("metrics");
   metrics.innerHTML = "";
   const items = [
-    ["Saving（锁定）", balances.saving],
-    ["Spending（可花）", balances.spending],
-    ["Investment（含匹配）", balances.investment],
-    ["Total（总资产）", total]
+    [t("metric_saving"), balances.saving],
+    [t("metric_spending"), balances.spending],
+    [t("metric_investment"), balances.investment],
+    [t("metric_total"), total]
   ];
   for (const [label, val] of items) {
     const div = document.createElement("div");
@@ -288,7 +503,7 @@ function render() {
 
   // week reminder + allocator
   const weekKey = isoWeekKey(new Date());
-  document.getElementById("weekInfo").textContent = `当前周：${weekKey}（按 ISO 周计算）`;
+  document.getElementById("weekInfo").textContent = t("week_info", { weekKey });
 
   const weeklyCard = document.getElementById("weeklyCard");
   if (!child) {
@@ -307,7 +522,12 @@ function render() {
     if (exists) {
       const w = getWeekly(data, childId, weekKey);
       status.className = "card ok";
-      status.textContent = `✅ 本周已完成分配：Saving ${money(w.saving)} / Spending ${money(w.spending)} / Investment ${money(w.investment)}（基准 ${money(w.base)}）`;
+      status.textContent = t("weekly_done", {
+        saving: money(w.saving),
+        spending: money(w.spending),
+        investment: money(w.investment),
+        base: money(w.base)
+      });
       // load existing allocation into inputs (readonly-ish behavior)
       wkSaving.value = w.saving;
       wkSpending.value = w.spending;
@@ -315,11 +535,11 @@ function render() {
       wkNote.value = w.note || "";
     } else {
       status.className = "card warn";
-      status.textContent = `⏰ 本周还没分配零花钱。请把 ${money(base)} 分配到三类里（合计必须刚好等于基准）。`;
+      status.textContent = t("weekly_todo", { base: money(base) });
     }
 
     const sumNow = Number(wkSaving.value||0) + Number(wkSpending.value||0) + Number(wkInvestment.value||0);
-    wkSum.textContent = `当前合计：${money(sumNow)}（需要等于 ${money(base)}）`;
+    wkSum.textContent = t("weekly_sum", { sum: money(sumNow), base: money(base) });
   }
 
   // ledger
@@ -348,7 +568,7 @@ function render() {
 function addChild() {
   const data = loadData();
   const name = document.getElementById("childName").value.trim();
-  if (!name) return alert("孩子名字不能为空。人类起名还是很重要的。");
+  if (!name) return alert(t("alert_name_empty"));
   const id = Date.now();
   data.children.push({ id, name, createdAt: nowISO() });
   saveData(data);
@@ -375,7 +595,7 @@ function submitWeek() {
 
   const weekKey = isoWeekKey(new Date());
   if (hasWeekly(data, childId, weekKey)) {
-    return alert("本周已经提交过了。要改请先删除本周分配（谨慎按钮）。");
+    return alert(t("alert_week_exists"));
   }
   const base = Number(document.getElementById("weeklyBase").value || 5);
   const s = Number(document.getElementById("wkSaving").value || 0);
@@ -385,20 +605,20 @@ function submitWeek() {
   const sum = s + p + i;
 
   if (Math.abs(sum - base) > 1e-6) {
-    return alert(`合计必须刚好等于 ${money(base)}。你现在是 ${money(sum)}。`);
+    return alert(t("alert_sum_mismatch", { base: money(base), sum: money(sum) }));
   }
 
   // weekly record
   data.weekly.push({ childId, weekKey, base, saving:s, spending:p, investment:i, ts: nowISO(), note });
 
   // deposits for each category, meta=weekKey for traceability
-  if (s > 0) data.txs.push({ childId, ts: nowISO(), category:"saving", type:"deposit", amount:s, note:"Weekly allowance allocation", meta: weekKey });
-  if (p > 0) data.txs.push({ childId, ts: nowISO(), category:"spending", type:"deposit", amount:p, note:"Weekly allowance allocation", meta: weekKey });
+  if (s > 0) data.txs.push({ childId, ts: nowISO(), category:"saving", type:"deposit", amount:s, note:t("note_weekly_allocation"), meta: weekKey });
+  if (p > 0) data.txs.push({ childId, ts: nowISO(), category:"spending", type:"deposit", amount:p, note:t("note_weekly_allocation"), meta: weekKey });
   if (i > 0) {
-    data.txs.push({ childId, ts: nowISO(), category:"investment", type:"deposit", amount:i, note:"Weekly allowance allocation", meta: weekKey });
+    data.txs.push({ childId, ts: nowISO(), category:"investment", type:"deposit", amount:i, note:t("note_weekly_allocation"), meta: weekKey });
     // auto match +50%
     const match = Math.round(i * 0.5 * 100) / 100;
-    if (match > 0) data.txs.push({ childId, ts: nowISO(), category:"investment", type:"deposit", amount:match, note:"Auto match +50% (weekly)", meta:"match" });
+    if (match > 0) data.txs.push({ childId, ts: nowISO(), category:"investment", type:"deposit", amount:match, note:t("note_match_weekly"), meta:"match" });
   }
 
   saveData(data);
@@ -411,8 +631,8 @@ function resetWeek() {
   const child = getChildById(data, childId);
   if (!child) return;
   const weekKey = isoWeekKey(new Date());
-  if (!hasWeekly(data, childId, weekKey)) return alert("本周还没提交过，不用删。");
-  if (!confirm("确定删除本周分配？会同时删除本周的三类入账交易（不会删除其他交易）。")) return;
+  if (!hasWeekly(data, childId, weekKey)) return alert(t("alert_no_week"));
+  if (!confirm(t("confirm_delete_week"))) return;
   removeWeekly(data, childId, weekKey);
   render();
 }
@@ -428,20 +648,20 @@ function addTx() {
   const amt = Number(document.getElementById("txAmount").value || 0);
   const note = document.getElementById("txNote").value || "";
 
-  if (amt <= 0) return alert("金额得大于 0。");
+  if (amt <= 0) return alert(t("alert_amount_positive"));
 
   // rules
   if (type === "spend") {
-    if (cat !== "spending") return alert("花费只能从 Spending。Saving 锁死，Investment 这里先不做卖出。");
+    if (cat !== "spending") return alert(t("alert_spend_category"));
     const bal = computeBalances(data, childId);
-    if (bal.spending < amt) return alert(`Spending 余额不足：当前 ${money(bal.spending)}`);
+    if (bal.spending < amt) return alert(t("alert_spend_insufficient", { balance: money(bal.spending) }));
     data.txs.push({ childId, ts: nowISO(), category:"spending", type:"spend", amount:-amt, note, meta:"" });
   } else {
     // deposit
     data.txs.push({ childId, ts: nowISO(), category:cat, type:"deposit", amount:amt, note, meta:"" });
     if (cat === "investment") {
       const match = Math.round(amt * 0.5 * 100) / 100;
-      if (match > 0) data.txs.push({ childId, ts: nowISO(), category:"investment", type:"deposit", amount:match, note:"Auto match +50%", meta:"match" });
+      if (match > 0) data.txs.push({ childId, ts: nowISO(), category:"investment", type:"deposit", amount:match, note:t("note_match"), meta:"match" });
     }
   }
 
@@ -469,9 +689,9 @@ function importData(file) {
       if (!obj || typeof obj !== "object") throw new Error("格式不对");
       localStorage.setItem(KEY, JSON.stringify(obj));
       render();
-      alert("导入完成。");
+      alert(t("alert_import_done"));
     } catch (e) {
-      alert("导入失败：" + e.message);
+      alert(t("alert_import_failed", { message: e.message }));
     }
   };
   reader.readAsText(file);
@@ -499,6 +719,27 @@ document.getElementById("btnExport").addEventListener("click", exportData);
 document.getElementById("btnImport").addEventListener("click", () => document.getElementById("fileImport").click());
 document.getElementById("fileImport").addEventListener("change", (e) => {
   if (e.target.files && e.target.files[0]) importData(e.target.files[0]);
+});
+
+const settingsBtn = document.getElementById("btnSettings");
+const settingsPanel = document.getElementById("settingsPanel");
+settingsBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  settingsPanel.classList.toggle("hidden");
+});
+settingsPanel.addEventListener("click", (e) => e.stopPropagation());
+document.addEventListener("click", () => {
+  if (!settingsPanel.classList.contains("hidden")) settingsPanel.classList.add("hidden");
+});
+document.querySelectorAll("#langToggle .lang-btn").forEach(btn => {
+  btn.addEventListener("click", (e) => {
+    const data = loadData();
+    data.settings.lang = e.currentTarget.dataset.lang === "en" ? "en" : "zh";
+    saveData(data);
+    currentLang = data.settings.lang;
+    applyI18n();
+    render();
+  });
 });
 
 render();
