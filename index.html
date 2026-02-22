@@ -136,44 +136,13 @@
   </div>
 
   <div class="card">
-    <h2 data-i18n="section_tx">➕ 记一笔（额外存入或花费）</h2>
-    <div class="row">
-      <div class="col">
-        <label class="muted" data-i18n="label_tx_type">类型</label>
-        <select id="txType">
-          <option value="deposit" data-i18n="opt_deposit">Deposit（存入）</option>
-          <option value="spend" data-i18n="opt_spend">Spend（花费，仅 Spending）</option>
-        </select>
-      </div>
-      <div class="col">
-        <label class="muted" data-i18n="label_tx_category">类别</label>
-        <select id="txCategory">
-          <option value="saving" data-i18n="opt_cat_saving">Saving</option>
-          <option value="spending" selected data-i18n="opt_cat_spending">Spending</option>
-          <option value="investment" data-i18n="opt_cat_investment">Investment</option>
-        </select>
-      </div>
-      <div class="col">
-        <label class="muted" data-i18n="label_tx_amount">金额</label>
-        <input id="txAmount" type="number" min="0" step="1" value="1" />
-      </div>
-      <div class="col">
-        <label class="muted" data-i18n="label_tx_note">备注</label>
-        <input id="txNote" data-i18n-placeholder="placeholder_tx_note" placeholder="买了啥/为啥存" />
-      </div>
-      <div class="col">
-        <label class="muted"> </label>
-        <button id="btnAddTx" data-i18n="btn_add_tx">记录</button>
-      </div>
-    </div>
-    <div class="muted" style="margin-top:8px;" data-i18n="tx_hint">
-      Saving 不允许花费。Investment 存入会自动加 50% match。
-    </div>
-  </div>
-
-  <div class="card">
     <h2 data-i18n="section_ledger">📒 账本</h2>
     <div class="muted" style="margin-bottom:8px;" data-i18n="ledger_hint">最近记录在上面。Investment 匹配会显示 meta=match。</div>
+    <div class="row" style="margin-bottom:10px;">
+      <div class="col" style="max-width:260px;">
+        <button id="btnOpenTxModal" data-i18n="btn_open_tx">Add Transaction</button>
+      </div>
+    </div>
     <div style="overflow:auto;">
       <table>
         <thead>
@@ -227,6 +196,46 @@
   </div>
 </div>
 
+<div class="modal-backdrop hidden" id="txModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="txModalTitle">
+    <div class="modal-title" id="txModalTitle" data-i18n="section_tx">➕ 记一笔（额外存入或花费）</div>
+    <div class="row">
+      <div class="col">
+        <label class="muted" data-i18n="label_tx_type">类型</label>
+        <select id="txType">
+          <option value="deposit" data-i18n="opt_deposit">Deposit（存入）</option>
+          <option value="spend" data-i18n="opt_spend">Spend（花费，仅 Spending）</option>
+        </select>
+      </div>
+      <div class="col">
+        <label class="muted" data-i18n="label_tx_category">类别</label>
+        <select id="txCategory">
+          <option value="saving" data-i18n="opt_cat_saving">Saving</option>
+          <option value="spending" selected data-i18n="opt_cat_spending">Spending</option>
+          <option value="investment" data-i18n="opt_cat_investment">Investment</option>
+        </select>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <div class="col">
+        <label class="muted" data-i18n="label_tx_amount">金额</label>
+        <input id="txAmount" type="number" min="0" step="1" value="1" />
+      </div>
+      <div class="col">
+        <label class="muted" data-i18n="label_tx_note">备注</label>
+        <input id="txNote" data-i18n-placeholder="placeholder_tx_note" placeholder="买了啥/为啥存" />
+      </div>
+    </div>
+    <div class="muted" style="margin-top:8px;" data-i18n="tx_hint">
+      Saving 不允许花费。Investment 存入会自动加 50% match。
+    </div>
+    <div class="modal-actions">
+      <button class="secondary" id="btnCancelTx" data-i18n="btn_cancel">取消</button>
+      <button id="btnAddTx" data-i18n="btn_add_tx">记录</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /** ---------- Storage Model ----------
  * data = {
@@ -270,6 +279,7 @@ const I18N = {
     placeholder_week_note: "比如：本周表现/奖励原因",
     btn_submit_week: "✅ 提交本周分配",
     btn_reset_week: "（谨慎）删除本周分配",
+    btn_open_tx: "添加交易",
     section_tx: "➕ 记一笔（额外存入或花费）",
     label_tx_type: "类型",
     label_tx_category: "类别",
@@ -346,6 +356,7 @@ const I18N = {
     placeholder_week_note: "e.g. behavior/reward reason",
     btn_submit_week: "✅ Submit this week",
     btn_reset_week: "(Careful) Delete this week",
+    btn_open_tx: "Add Transaction",
     section_tx: "➕ Add a transaction (extra deposit or spend)",
     label_tx_type: "Type",
     label_tx_category: "Category",
@@ -537,6 +548,8 @@ function render() {
 
   const childId = getSelectedChildId(data);
   const child = getChildById(data, childId);
+  const openTxBtn = document.getElementById("btnOpenTxModal");
+  if (openTxBtn) openTxBtn.disabled = !child;
 
   // weekly base
   const weeklyBaseInput = document.getElementById("weeklyBase");
@@ -699,6 +712,7 @@ function openChildrenDialog() {
 function closeChildrenDialog(applyChanges) {
   const modal = document.getElementById("childrenModal");
   document.getElementById("addChildModal").classList.add("hidden");
+  document.getElementById("txModal").classList.add("hidden");
   if (applyChanges && stagedData) {
     if (stagedData.children.length && !stagedData.settings.activeChildId) {
       stagedData.settings.activeChildId = stagedData.children[0].id;
@@ -708,6 +722,18 @@ function closeChildrenDialog(applyChanges) {
   stagedData = null;
   modal.classList.add("hidden");
   render();
+}
+
+function openTxDialog() {
+  const data = loadData();
+  const child = getChildById(data, getSelectedChildId(data));
+  if (!child) return;
+  document.getElementById("txModal").classList.remove("hidden");
+  applyI18n();
+}
+
+function closeTxDialog() {
+  document.getElementById("txModal").classList.add("hidden");
 }
 
 function submitWeek() {
@@ -790,6 +816,7 @@ function addTx() {
 
   saveData(data);
   document.getElementById("txNote").value = "";
+  closeTxDialog();
   render();
 }
 
@@ -832,6 +859,8 @@ if ("serviceWorker" in navigator) {
 
 document.getElementById("btnSubmitWeek").addEventListener("click", submitWeek);
 document.getElementById("btnResetWeek").addEventListener("click", resetWeek);
+document.getElementById("btnOpenTxModal").addEventListener("click", openTxDialog);
+document.getElementById("btnCancelTx").addEventListener("click", closeTxDialog);
 document.getElementById("btnAddTx").addEventListener("click", addTx);
 
 document.getElementById("btnExport").addEventListener("click", exportData);
